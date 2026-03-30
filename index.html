@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Miro K1 識字練習</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6c5ce7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        :root { --main: #6c5ce7; --bg: #f1f2f6; }
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; touch-action: manipulation; }
+        body { font-family: 'Arial Rounded MT Bold', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; transition: background 0.4s; overflow: hidden; padding-top: env(safe-area-inset-top); }
+        #box { width: 92%; max-width: 400px; background: white; padding: 25px; border-radius: 40px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border: 8px solid #a29bfe; position: relative; }
+        .score-bar { display:flex; justify-content: space-between; font-weight:bold; color:#636e72; margin-bottom:15px; }
+        .pic-frame { width: 100%; height: 280px; background: #fff; border-radius: 30px; margin-bottom: 20px; border: 4px dashed #dfe6e9; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        #q-img { width: 100%; height: 100%; object-fit: contain; padding: 15px; }
+        #mic-btn { width: 100px; height: 100px; border-radius: 50%; border: none; background: #ff7675; color: white; font-size: 45px; cursor: pointer; margin-bottom: 15px; box-shadow: 0 8px 0 #d63031; position: relative; display: inline-flex; align-items: center; justify-content: center; }
+        #mic-btn.active { background: #55efc4; box-shadow: 0 4px 0 #00b894; transform: translateY(4px); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(85, 239, 196, 0.5); } 70% { box-shadow: 0 0 0 15px rgba(85, 239, 196, 0); } 100% { box-shadow: 0 0 0 0 rgba(85, 239, 196, 0); } }
+        #msg { margin-top: 10px; font-size: 20px; font-weight: bold; min-height: 55px; line-height: 1.3; }
+        .star { position: absolute; pointer-events: none; font-size: 30px; animation: fly 1s forwards; }
+        @keyframes fly { 0% { transform: translate(-50%,-50%) scale(1); opacity:1; } 100% { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(2); opacity:0; } }
+    </style>
+</head>
+<body id="bg">
+<div id="box">
+    <div class="score-bar"><span>⭐ 分數: <b id="s">0</b></span><span>進度: <b id="c">0</b>/30</span></div>
+    <div class="pic-frame" onclick="spkCurrent()"><img id="q-img" src=""></div>
+    <div style="color:#6c5ce7; font-weight:bold; margin-bottom:10px;" id="st">點 🎤 跟我唸唸看</div>
+    <button id="mic-btn" onclick="startListen()">🎤</button>
+    <div id="msg"></div>
+</div>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
+    }
+
+    const ws = ["Apple", "Ant", "Alligator", "Arrow", "Anchor", "Ambulance", "Bed", "Book", "Banana", "Bear", "Bicycle", "Boat", "Butterfly", "Cake", "Camel", "Can", "Car", "Carrot", "Cat", "Coat", "Cup", "Deer", "Dice", "Dog", "Doll", "Dolphin", "Doughnut", "Drum", "Egg", "Eggplant", "Elbow", "Elephant", "Envelope", "Fan", "Feather", "Fish", "Flower", "Fork", "Frog", "Ghost", "Glass", "Glue", "Goat", "Gorilla", "Grapes", "Harp", "Hat", "Heart", "Hippo", "Holly", "Horse", "Igloo", "Iguana", "In", "Ink", "Insects", "Jacket", "Jacks", "Jellyfish", "Jigsaw puzzle", "Juggle", "Jump rope", "Kangaroo", "Keys", "King", "Kite", "Kitten", "Ladder", "Lollipop", "Leaf", "Light", "Lightning", "Lion", "Match", "Monkey", "Moon", "Mop", "Moose", "Mouse", "Nails", "Needle", "Nest", "Net", "Nine", "Notebook", "Oar", "Octopus", "Orange", "Ornament", "Ostrich", "Ox", "Paintbrush", "Peas", "Pencil", "Piano", "Pig", "Pizza", "Pumpkin", "Quail", "Queen", "Question", "Quilt", "Quiver", "Rabbit", "Rake", "Rhino", "Ring", "Rooster", "Rope", "Rose", "Scooter", "Sloth", "Snake", "Snail", "Snowman", "Spade", "Table", "Tiger", "Tree", "Truck", "Turtle", "Two", "Umbrella", "Umpire", "Under", "Underwear", "Vacuum", "Vase", "Vest", "Vine", "Violin", "Volcano", "Wagon", "Warm", "Watch", "Watermelon", "Whistle", "Window", "Wolf", "X-ray", "Yak", "Yam", "Yarn", "Yoga", "Yo-yo", "Zebra", "Zeppelin", "Zipper", "Zither", "Zucchini"];
+    let playList = [...ws].sort(() => Math.random() - 0.5).slice(0, 30);
+    let cur = 0, score = 0, solvedCount = 0, isRec = false;
+
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = Recognition ? new Recognition() : null;
+    if (rec) { rec.lang = 'en-US'; rec.maxAlternatives = 3; }
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSfx(freq, type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.type = type; o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        o.start(); o.stop(audioCtx.currentTime + 0.3);
+    }
+
+    function spk(t) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = 0.75;
+        window.speechSynthesis.speak(u);
+    }
+    function spkCurrent() { if(audioCtx.state === 'suspended') audioCtx.resume(); spk(playList[cur]); }
+
+    function startListen() {
+        if(!rec) return alert("不支援語音辨識");
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        if(isRec) return;
+        try { rec.start(); isRec = true; document.getElementById('mic-btn').classList.add('active'); } catch(e){}
+    }
+
+    if (rec) {
+        rec.onresult = (e) => {
+            const results = Array.from(e.results[0]).map(r => r.transcript.toLowerCase());
+            const target = playList[cur].toLowerCase();
+            const body = document.getElementById('bg');
+            const word = playList[cur];
+            const ok = results.some(r => r.includes(target) || target.includes(r));
+            
+            if (ok) {
+                playSfx(523, 'sine'); body.style.background = "#abf1da"; createStars();
+                score += 10; solvedCount++; document.getElementById('s').textContent = score;
+                document.getElementById('msg').innerHTML = `<span style="color:#20bf6b">Excellent! ✨</span><br>${word}`;
+                setTimeout(() => spk(word), 600);
+                cur++; setTimeout(ren, 2000);
+            } else {
+                playSfx(220, 'triangle'); body.style.background = "#ffcfcf";
+                document.getElementById('msg').innerHTML = `<span style="color:#d63031">Heard "${results[0]}"</span><br>Listen carefully...`;
+                setTimeout(() => spk(word), 800);
+                const w = playList.splice(cur, 1)[0]; playList.splice(Math.min(cur+2, playList.length), 0, w);
+                setTimeout(ren, 2800);
+            }
+        };
+        rec.onend = () => { isRec = false; document.getElementById('mic-btn').classList.remove('active'); };
+    }
+
+    function createStars() {
+        for (let i = 0; i < 10; i++) {
+            const s = document.createElement('div'); s.className = 'star'; s.innerHTML = '⭐';
+            s.style.left = '50%'; s.style.top = '50%';
+            s.style.setProperty('--x', (Math.random()*400-200)+'px'); s.style.setProperty('--y', (Math.random()*400-200)+'px');
+            document.body.appendChild(s); setTimeout(() => s.remove(), 1000);
+        }
+    }
+
+    function ren() {
+        document.getElementById('bg').style.background = "#f1f2f6";
+        if (solvedCount >= 30) { document.getElementById('box').innerHTML = "<h1>🏆 Winner!</h1><button onclick='location.reload()'>Play Again</button>"; return; }
+        const w = playList[cur];
+        const fix = { "Lollipop":"lallipop.jpg", "Moose":"mosse.jpg", "Snail":"snall.jpg", "Violin":"vlolin.jpg" };
+        document.getElementById('q-img').src = fix[w] || (w.toLowerCase() + ".jpg");
+        document.getElementById('c').textContent = solvedCount;
+        document.getElementById('st').textContent = "點 🎤 跟我唸唸看";
+        document.getElementById('msg').textContent = "";
+    }
+    window.onload = ren;
+</script>
+</body>
+</html>
