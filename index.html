@@ -21,7 +21,7 @@
         #mic-btn.active { background: #55efc4; box-shadow: 0 4px 0 #00b894; transform: translateY(4px); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(85, 239, 196, 0.5); } 70% { box-shadow: 0 0 0 15px rgba(85, 239, 196, 0); } 100% { box-shadow: 0 0 0 0 rgba(85, 239, 196, 0); } }
         #msg { margin-top: 10px; font-size: 20px; font-weight: bold; min-height: 55px; line-height: 1.3; }
-        .star { position: absolute; pointer-events: none; font-size: 30px; animation: fly 1s forwards; }
+        .star { position: absolute; pointer-events: none; font-size: 35px; animation: fly 1s forwards; z-index: 99; }
         @keyframes fly { 0% { transform: translate(-50%,-50%) scale(1); opacity:1; } 100% { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(2); opacity:0; } }
     </style>
 </head>
@@ -35,9 +35,7 @@
 </div>
 
 <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
-    }
+    if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); }); }
 
     const ws = ["Apple", "Ant", "Alligator", "Arrow", "Anchor", "Ambulance", "Bed", "Book", "Banana", "Bear", "Bicycle", "Boat", "Butterfly", "Cake", "Camel", "Can", "Car", "Carrot", "Cat", "Coat", "Cup", "Deer", "Dice", "Dog", "Doll", "Dolphin", "Doughnut", "Drum", "Egg", "Eggplant", "Elbow", "Elephant", "Envelope", "Fan", "Feather", "Fish", "Flower", "Fork", "Frog", "Ghost", "Glass", "Glue", "Goat", "Gorilla", "Grapes", "Harp", "Hat", "Heart", "Hippo", "Holly", "Horse", "Igloo", "Iguana", "In", "Ink", "Insects", "Jacket", "Jacks", "Jellyfish", "Jigsaw puzzle", "Juggle", "Jump rope", "Kangaroo", "Keys", "King", "Kite", "Kitten", "Ladder", "Lollipop", "Leaf", "Light", "Lightning", "Lion", "Match", "Monkey", "Moon", "Mop", "Moose", "Mouse", "Nails", "Needle", "Nest", "Net", "Nine", "Notebook", "Oar", "Octopus", "Orange", "Ornament", "Ostrich", "Ox", "Paintbrush", "Peas", "Pencil", "Piano", "Pig", "Pizza", "Pumpkin", "Quail", "Queen", "Question", "Quilt", "Quiver", "Rabbit", "Rake", "Rhino", "Ring", "Rooster", "Rope", "Rose", "Scooter", "Sloth", "Snake", "Snail", "Snowman", "Spade", "Table", "Tiger", "Tree", "Truck", "Turtle", "Two", "Umbrella", "Umpire", "Under", "Underwear", "Vacuum", "Vase", "Vest", "Vine", "Violin", "Volcano", "Wagon", "Warm", "Watch", "Watermelon", "Whistle", "Window", "Wolf", "X-ray", "Yak", "Yam", "Yarn", "Yoga", "Yo-yo", "Zebra", "Zeppelin", "Zipper", "Zither", "Zucchini"];
     let playList = [...ws].sort(() => Math.random() - 0.5).slice(0, 30);
@@ -63,10 +61,11 @@
         const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = 0.75;
         window.speechSynthesis.speak(u);
     }
+    
     function spkCurrent() { if(audioCtx.state === 'suspended') audioCtx.resume(); spk(playList[cur]); }
 
     function startListen() {
-        if(!rec) return alert("不支援語音辨識");
+        if(!rec) return alert("您的裝置不支援語音辨識，請使用 Safari (iOS) 或 Chrome (Android)");
         if(audioCtx.state === 'suspended') audioCtx.resume();
         if(isRec) return;
         try { rec.start(); isRec = true; document.getElementById('mic-btn').classList.add('active'); } catch(e){}
@@ -77,38 +76,53 @@
             const results = Array.from(e.results[0]).map(r => r.transcript.toLowerCase());
             const target = playList[cur].toLowerCase();
             const body = document.getElementById('bg');
-            const word = playList[cur];
+            const word = playList[cur]; // 鎖定目前單字
+            
             const ok = results.some(r => r.includes(target) || target.includes(r));
             
             if (ok) {
+                // --- 答對：星星先飛，再發音 ---
                 playSfx(523, 'sine'); body.style.background = "#abf1da"; createStars();
-                score += 10; solvedCount++; document.getElementById('s').textContent = score;
+                score += 10; solvedCount++;
+                document.getElementById('s').textContent = score;
                 document.getElementById('msg').innerHTML = `<span style="color:#20bf6b">Excellent! ✨</span><br>${word}`;
+                
+                // 延遲 0.6 秒播放正確讀音
                 setTimeout(() => spk(word), 600);
-                cur++; setTimeout(ren, 2000);
+                
+                cur++; setTimeout(ren, 2200);
             } else {
+                // --- 答錯：先顯示聽到什麼，再發音引導 ---
                 playSfx(220, 'triangle'); body.style.background = "#ffcfcf";
-                document.getElementById('msg').innerHTML = `<span style="color:#d63031">Heard "${results[0]}"</span><br>Listen carefully...`;
+                document.getElementById('msg').innerHTML = `<span style="color:#d63031">I heard "${results[0]}"</span><br>Listen and try again...`;
+                
+                // 延遲 0.8 秒播放正確讀音
                 setTimeout(() => spk(word), 800);
-                const w = playList.splice(cur, 1)[0]; playList.splice(Math.min(cur+2, playList.length), 0, w);
-                setTimeout(ren, 2800);
+                
+                const w = playList.splice(cur, 1)[0]; 
+                playList.splice(Math.min(cur+2, playList.length), 0, w);
+                setTimeout(ren, 3000);
             }
         };
         rec.onend = () => { isRec = false; document.getElementById('mic-btn').classList.remove('active'); };
+        rec.onerror = () => { isRec = false; document.getElementById('mic-btn').classList.remove('active'); };
     }
 
     function createStars() {
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 12; i++) {
             const s = document.createElement('div'); s.className = 'star'; s.innerHTML = '⭐';
             s.style.left = '50%'; s.style.top = '50%';
-            s.style.setProperty('--x', (Math.random()*400-200)+'px'); s.style.setProperty('--y', (Math.random()*400-200)+'px');
+            s.style.setProperty('--x', (Math.random()*500-250)+'px'); s.style.setProperty('--y', (Math.random()*500-250)+'px');
             document.body.appendChild(s); setTimeout(() => s.remove(), 1000);
         }
     }
 
     function ren() {
         document.getElementById('bg').style.background = "#f1f2f6";
-        if (solvedCount >= 30) { document.getElementById('box').innerHTML = "<h1>🏆 Winner!</h1><button onclick='location.reload()'>Play Again</button>"; return; }
+        if (solvedCount >= 30) { 
+            document.getElementById('box').innerHTML = "<h1 style='color:#6c5ce7'>🏆 Miro 太棒了！</h1><p>你完成了今天的練習！</p><button onclick='location.reload()' style='padding:15px 30px; border-radius:20px; border:none; background:#6c5ce7; color:white; font-weight:bold; font-size:18px;'>再玩一次</button>"; 
+            return; 
+        }
         const w = playList[cur];
         const fix = { "Lollipop":"lallipop.jpg", "Moose":"mosse.jpg", "Snail":"snall.jpg", "Violin":"vlolin.jpg" };
         document.getElementById('q-img').src = fix[w] || (w.toLowerCase() + ".jpg");
