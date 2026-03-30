@@ -58,7 +58,9 @@
 
     function spk(t) {
         window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = 0.75;
+        const u = new SpeechSynthesisUtterance(t); 
+        u.lang = 'en-US'; 
+        u.rate = 0.75; 
         window.speechSynthesis.speak(u);
     }
     
@@ -68,7 +70,12 @@
         if(!rec) return alert("您的裝置不支援語音辨識，請使用 Safari (iOS) 或 Chrome (Android)");
         if(audioCtx.state === 'suspended') audioCtx.resume();
         if(isRec) return;
-        try { rec.start(); isRec = true; document.getElementById('mic-btn').classList.add('active'); } catch(e){}
+        try { 
+            rec.start(); 
+            isRec = true; 
+            document.getElementById('mic-btn').classList.add('active'); 
+            document.getElementById('msg').textContent = "Listen...";
+        } catch(e){}
     }
 
     if (rec) {
@@ -76,32 +83,34 @@
             const results = Array.from(e.results[0]).map(r => r.transcript.toLowerCase());
             const target = playList[cur].toLowerCase();
             const body = document.getElementById('bg');
-            const word = playList[cur]; // 鎖定目前單字
+            const word = playList[cur];
             
             const ok = results.some(r => r.includes(target) || target.includes(r));
             
+            // 重要：在此處立刻呼叫一次發音，避免 iOS 阻擋
+            spk(""); 
+
             if (ok) {
-                // --- 答對：星星先飛，再發音 ---
                 playSfx(523, 'sine'); body.style.background = "#abf1da"; createStars();
                 score += 10; solvedCount++;
                 document.getElementById('s').textContent = score;
                 document.getElementById('msg').innerHTML = `<span style="color:#20bf6b">Excellent! ✨</span><br>${word}`;
                 
-                // 延遲 0.6 秒播放正確讀音
-                setTimeout(() => spk(word), 600);
+                // 答對回饋
+                setTimeout(() => spk(word), 200);
                 
-                cur++; setTimeout(ren, 2200);
+                cur++; 
+                setTimeout(ren, 2500);
             } else {
-                // --- 答錯：先顯示聽到什麼，再發音引導 ---
                 playSfx(220, 'triangle'); body.style.background = "#ffcfcf";
-                document.getElementById('msg').innerHTML = `<span style="color:#d63031">I heard "${results[0]}"</span><br>Listen and try again...`;
+                document.getElementById('msg').innerHTML = `<span style="color:#d63031">I heard "${results[0]}"</span><br>Listen...`;
                 
-                // 延遲 0.8 秒播放正確讀音
-                setTimeout(() => spk(word), 800);
+                // 答錯引導回饋
+                setTimeout(() => spk(word), 300);
                 
                 const w = playList.splice(cur, 1)[0]; 
                 playList.splice(Math.min(cur+2, playList.length), 0, w);
-                setTimeout(ren, 3000);
+                setTimeout(ren, 3500);
             }
         };
         rec.onend = () => { isRec = false; document.getElementById('mic-btn').classList.remove('active'); };
@@ -120,7 +129,7 @@
     function ren() {
         document.getElementById('bg').style.background = "#f1f2f6";
         if (solvedCount >= 30) { 
-            document.getElementById('box').innerHTML = "<h1 style='color:#6c5ce7'>🏆 Miro 太棒了！</h1><p>你完成了今天的練習！</p><button onclick='location.reload()' style='padding:15px 30px; border-radius:20px; border:none; background:#6c5ce7; color:white; font-weight:bold; font-size:18px;'>再玩一次</button>"; 
+            document.getElementById('box').innerHTML = "<h1 style='color:#6c5ce7'>🏆 Miro 太棒了！</h1><p>你完成了練習！</p><button onclick='location.reload()' style='padding:15px 30px; border-radius:20px; border:none; background:#6c5ce7; color:white; font-weight:bold; font-size:18px;'>再玩一次</button>"; 
             return; 
         }
         const w = playList[cur];
