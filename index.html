@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Miro's English Adventure</title>
+    <title>Miro's Random Adventure</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,7 +20,7 @@
         #mic-btn { width: 90px; height: 90px; border-radius: 50%; border: none; background: var(--wrong); color: white; font-size: 40px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 6px 0 #d63031; position: relative; display: inline-flex; align-items: center; justify-content: center; }
         #mic-btn.active { background: var(--correct); box-shadow: 0 4px 0 #00b894; transform: translateY(4px); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(85, 239, 196, 0.5); } 70% { box-shadow: 0 0 0 15px rgba(85, 239, 196, 0); } 100% { box-shadow: 0 0 0 0 rgba(85, 239, 196, 0); } }
-        #msg { margin-top: 5px; font-size: 22px; font-weight: bold; min-height: 50px; line-height: 1.2; }
+        #msg { margin-top: 5px; font-size: 24px; font-weight: bold; min-height: 50px; line-height: 1.2; }
         .star { position: absolute; pointer-events: none; font-size: 30px; animation: fly 1s forwards; z-index: 99; }
         @keyframes fly { 0% { transform: translate(-50%,-50%) scale(1); opacity:1; } 100% { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(2); opacity:0; } }
         #start-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(108, 92, 231, 0.98); border-radius: 32px; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; cursor: pointer; text-align: center; padding: 20px; }
@@ -29,9 +29,9 @@
 <body id="bg">
 <div id="box">
     <div id="start-overlay" onclick="initGame()">
-        <span style="font-size: 60px;">🏰</span>
-        <h2 id="overlay-title">Miro 的英語大冒險</h2>
-        <p id="overlay-desc">點擊開始第一關</p>
+        <span style="font-size: 60px;">🎲</span>
+        <h2 id="overlay-title">Miro 的隨機大挑戰</h2>
+        <p id="overlay-desc">點擊開始練習</p>
     </div>
 
     <div class="header">
@@ -51,9 +51,8 @@
 
     const allWords = ["Apple", "Ant", "Alligator", "Arrow", "Anchor", "Ambulance", "Bed", "Book", "Banana", "Bear", "Bicycle", "Boat", "Butterfly", "Cake", "Camel", "Can", "Car", "Carrot", "Cat", "Coat", "Cup", "Deer", "Dice", "Dog", "Doll", "Dolphin", "Doughnut", "Drum", "Egg", "Eggplant", "Elbow", "Elephant", "Envelope", "Fan", "Feather", "Fish", "Flower", "Fork", "Frog", "Ghost", "Glass", "Glue", "Goat", "Gorilla", "Grapes", "Harp", "Hat", "Heart", "Hippo", "Holly", "Horse", "Igloo", "Iguana", "In", "Ink", "Insects", "Jacket", "Jacks", "Jellyfish", "Jigsaw puzzle", "Juggle", "Jump rope", "Kangaroo", "Keys", "King", "Kite", "Kitten", "Ladder", "Lollipop", "Leaf", "Light", "Lightning", "Lion", "Match", "Monkey", "Moon", "Mop", "Moose", "Mouse", "Nails", "Needle", "Nest", "Net", "Nine", "Notebook", "Oar", "Octopus", "Orange", "Ornament", "Ostrich", "Ox", "Paintbrush", "Peas", "Pencil", "Piano", "Pig", "Pizza", "Pumpkin", "Quail", "Queen", "Question", "Quilt", "Quiver", "Rabbit", "Rake", "Rhino", "Ring", "Rooster", "Rope", "Rose", "Scooter", "Sloth", "Snake", "Snail", "Snowman", "Spade", "Table", "Tiger", "Tree", "Truck", "Turtle", "Two", "Umbrella", "Umpire", "Under", "Underwear", "Vacuum", "Vase", "Vest", "Vine", "Violin", "Volcano", "Wagon", "Warm", "Watch", "Watermelon", "Whistle", "Window", "Wolf", "X-ray", "Yak", "Yam", "Yarn", "Yoga", "Yo-yo", "Zebra", "Zeppelin", "Zipper", "Zither", "Zucchini"];
     
-    // SRS 複習機制：答錯的單字會存入此清單，並提高出現頻率
-    let masterList = [...allWords];
-    let reviewQueue = []; 
+    // 隨機洗牌函式
+    let masterList = [...allWords].sort(() => Math.random() - 0.5);
     let currentWord = "";
     let score = 0, totalSolved = 0, isRec = false;
     let levelSize = 10;
@@ -70,10 +69,11 @@
         nextQuestion();
     }
 
-    function spk(t) {
+    function spk(t, callback) {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(t);
-        u.lang = 'en-US'; u.rate = 0.65;
+        u.lang = 'en-US'; u.rate = 0.7;
+        if (callback) u.onend = callback;
         window.speechSynthesis.speak(u);
     }
     
@@ -85,7 +85,7 @@
         if(isRec) return;
         rec.start(); isRec = true;
         document.getElementById('mic-btn').classList.add('active');
-        document.getElementById('msg').innerHTML = "👂 正在聽...";
+        document.getElementById('msg').innerHTML = "👂 I'm listening...";
     }
 
     if (rec) {
@@ -93,30 +93,41 @@
             const hears = Array.from(e.results[0]).map(r => r.transcript.toLowerCase());
             const target = currentWord.toLowerCase();
             const body = document.getElementById('bg');
+            const word = currentWord;
             
-            // 寬鬆判定
+            // 幼兒寬鬆判定
             const ok = hears.some(h => h.includes(target) || target.includes(h) || (target.length > 3 && h.substring(0,3) === target.substring(0,3)));
             
             if (ok) {
                 body.style.background = "#abf1da"; createStars();
                 score += 10; totalSolved++;
                 document.getElementById('s').textContent = score;
-                document.getElementById('msg').innerHTML = `<span style="color:#20bf6b">很好！ ✨</span><br>${currentWord}`;
-                setTimeout(() => spk(currentWord), 500);
+                document.getElementById('msg').innerHTML = `<span style="color:#20bf6b">Correct! ✨</span><br>${word}`;
                 
-                // 檢查是否過關
+                // 語音回饋：先說 Correct，再唸單字
+                spk("Correct", () => {
+                    setTimeout(() => spk(word), 200);
+                });
+                
                 if (totalSolved % levelSize === 0 && totalSolved > 0) {
-                    setTimeout(showLevelUp, 2000);
+                    setTimeout(showLevelUp, 2200);
                 } else {
-                    setTimeout(nextQuestion, 2500);
+                    setTimeout(nextQuestion, 2800);
                 }
             } else {
                 body.style.background = "#ffcfcf";
-                document.getElementById('msg').innerHTML = `<span style="color:#d63031">沒關係，再聽一次</span>`;
-                setTimeout(() => spk(currentWord), 700);
+                document.getElementById('msg').innerHTML = `<span style="color:#d63031">Try again later!</span>`;
                 
-                // 答錯邏輯：將單字加入複習隊列，讓它在 2 題後再次出現
-                reviewQueue.push(currentWord);
+                // 語音回饋：先說 Try again later，再唸正確音引導
+                spk("Try again later", () => {
+                    setTimeout(() => spk(word), 200);
+                });
+                
+                // 錯誤邏輯：將目前的單字插入到清單後面的隨機位置（約 5-8 題後）
+                const failWord = word;
+                const insertPos = Math.min(Math.floor(Math.random() * 4) + 5, masterList.length);
+                masterList.splice(insertPos, 0, failWord);
+                
                 setTimeout(nextQuestion, 3500);
             }
         };
@@ -127,17 +138,12 @@
         document.getElementById('bg').style.background = "#f1f2f6";
         document.getElementById('msg').textContent = "";
         
-        if (totalSolved >= 150) {
-            document.getElementById('box').innerHTML = "<h1>🏆 全數破關！</h1><p>Miro 是英語小達人！</p>";
+        if (masterList.length === 0) {
+            document.getElementById('box').innerHTML = "<h1>🏆 大滿貫破關！</h1><p>Miro 把 150 題都學會了！</p>";
             return;
         }
 
-        // 出題邏輯：30% 機率出複習題（如果隊列有人的話），70% 出新題
-        if (reviewQueue.length > 0 && (Math.random() < 0.4 || masterList.length === 0)) {
-            currentWord = reviewQueue.shift();
-        } else {
-            currentWord = masterList.shift();
-        }
+        currentWord = masterList.shift();
 
         const fix = { "Lollipop":"lallipop.jpg", "Moose":"mosse.jpg", "Snail":"snall.jpg", "Violin":"vlolin.jpg" };
         document.getElementById('q-img').src = fix[currentWord] || (currentWord.toLowerCase() + ".jpg");
@@ -148,8 +154,8 @@
     function showLevelUp() {
         const overlay = document.getElementById('start-overlay');
         const nextLvl = Math.floor(totalSolved / levelSize) + 1;
-        document.getElementById('overlay-title').innerText = `🎉 恭喜通過第 ${nextLvl-1} 關！`;
-        document.getElementById('overlay-desc').innerText = `點擊挑戰第 ${nextLvl} 關`;
+        document.getElementById('overlay-title').innerText = `🎉 第 ${nextLvl-1} 關完成！`;
+        document.getElementById('overlay-desc').innerText = `點擊開始挑戰第 ${nextLvl} 關`;
         overlay.style.display = 'flex';
     }
 
