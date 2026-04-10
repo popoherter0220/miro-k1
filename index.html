@@ -3,45 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Miro's Random Adventure</title>
+    <title>Miro's Cartoon English Adventure</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon-192.png">
     <style>
-        :root { --main: #6c5ce7; --bg: #f1f2f6; --wrong: #ff7675; --correct: #55efc4; }
+        :root { --main: #6c5ce7; --bg: #f8f9fa; --wrong: #ff7675; --correct: #55efc4; --pop: #fab1a0; }
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; touch-action: manipulation; }
-        body { font-family: 'Arial Rounded MT Bold', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; transition: background 0.4s; overflow: hidden; padding-top: env(safe-area-inset-top); }
-        #box { width: 92%; max-width: 420px; background: white; padding: 20px; border-radius: 40px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; border: 8px solid #a29bfe; position: relative; }
-        .header { display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 18px; font-weight: bold; color: #636e72; }
-        .lvl-badge { background: #6c5ce7; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; }
-        .pic-frame { width: 100%; height: 260px; background: #fff; border-radius: 30px; margin-bottom: 15px; border: 4px dashed #dfe6e9; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; cursor: pointer; }
-        #q-img { width: 100%; height: 100%; object-fit: contain; padding: 10px; }
-        #mic-btn { width: 90px; height: 90px; border-radius: 50%; border: none; background: var(--wrong); color: white; font-size: 40px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 6px 0 #d63031; position: relative; display: inline-flex; align-items: center; justify-content: center; }
-        #mic-btn.active { background: var(--correct); box-shadow: 0 4px 0 #00b894; transform: translateY(4px); animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(85, 239, 196, 0.5); } 70% { box-shadow: 0 0 0 15px rgba(85, 239, 196, 0); } 100% { box-shadow: 0 0 0 0 rgba(85, 239, 196, 0); } }
-        #msg { margin-top: 5px; font-size: 24px; font-weight: bold; min-height: 50px; line-height: 1.2; }
-        .star { position: absolute; pointer-events: none; font-size: 30px; animation: fly 1s forwards; z-index: 99; }
-        @keyframes fly { 0% { transform: translate(-50%,-50%) scale(1); opacity:1; } 100% { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(2); opacity:0; } }
-        #start-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(108, 92, 231, 0.98); border-radius: 32px; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; cursor: pointer; text-align: center; padding: 20px; }
+        body { font-family: 'Arial Rounded MT Bold', 'Helvetica Neue', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; transition: background 0.3s; overflow: hidden; padding-top: env(safe-area-inset-top); }
+        #box { width: 92%; max-width: 420px; background: white; padding: 25px; border-radius: 45px; box-shadow: 0 20px 40px rgba(108, 92, 231, 0.15); text-align: center; border: 10px solid #a29bfe; position: relative; transition: transform 0.2s; }
+        .header { display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 20px; font-weight: bold; color: #636e72; }
+        .lvl-badge { background: #6c5ce7; color: white; padding: 6px 18px; border-radius: 25px; font-size: 16px; box-shadow: 0 4px 0 #4834d4; }
+        
+        /* 卡通圖片框 */
+        .pic-frame { width: 100%; height: 260px; background: #fff; border-radius: 35px; margin-bottom: 20px; border: 6px dashed #dfe6e9; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; cursor: pointer; transition: border-color 0.3s; }
+        .pic-frame:active { border-color: var(--main); }
+        #q-img { width: 100%; height: 100%; object-fit: contain; padding: 15px; transform: scale(0); opacity: 0; }
+        
+        /* 【動畫定義】 */
+        /* 1. 新題目彈出 */
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        .pop-in { animation: popIn 0.6s ease-out forwards; }
+        /* 2. 答對搖擺 */
+        @keyframes wiggle { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(10deg); } 75% { transform: rotate(-10deg); } }
+        .wiggle { animation: wiggle 0.5s ease-in-out 2; }
+        /* 3. 答錯震動 */
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+        .shake { animation: shake 0.4s ease-in-out; }
+
+        #mic-btn { width: 100px; height: 100px; border-radius: 50%; border: none; background: var(--wrong); color: white; font-size: 50px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 10px 0 #d63031; position: relative; display: inline-flex; align-items: center; justify-content: center; transition: all 0.1s; }
+        #mic-btn:active { transform: translateY(4px); box-shadow: 0 6px 0 #d63031; }
+        #mic-btn.active { background: var(--correct); box-shadow: 0 6px 0 #00b894; transform: translateY(4px); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(85, 239, 196, 0.6); } 70% { box-shadow: 0 0 0 20px rgba(85, 239, 196, 0); } 100% { box-shadow: 0 0 0 0 rgba(85, 239, 196, 0); } }
+        
+        #msg { margin-top: 5px; font-size: 28px; font-weight: bold; min-height: 60px; color: #2d3436; text-shadow: 0 2px 0 rgba(0,0,0,0.05); }
+        .star { position: absolute; pointer-events: none; font-size: 40px; animation: fly 1s forwards; z-index: 99; text-shadow: 0 4px 10px rgba(255,234,0,0.5); }
+        @keyframes fly { 0% { transform: translate(-50%,-50%) scale(1) rotate(0deg); opacity:1; } 100% { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(2.5) rotate(360deg); opacity:0; } }
+        
+        /* 啟動遮罩 */
+        #start-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(108, 92, 231, 0.99); border-radius: 35px; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; cursor: pointer; text-align: center; padding: 20px; backface-visibility: hidden; }
     </style>
 </head>
 <body id="bg">
 <div id="box">
     <div id="start-overlay" onclick="initGame()">
-        <span style="font-size: 60px;">🎲</span>
-        <h2 id="overlay-title">Miro 的隨機大挑戰</h2>
-        <p id="overlay-desc">點擊開始練習</p>
+        <span style="font-size: 80px; animation: wiggle 1s infinite;">🎁</span>
+        <h1 style="margin: 15px 0 5px 0; font-size: 32px;">Miro English</h1>
+        <p style="font-size: 20px; opacity: 0.9;">點一下開始玩！</p>
     </div>
 
     <div class="header">
-        <div class="lvl-badge">Level <span id="lvl">1</span></div>
-        <div>⭐ <span id="s">0</span></div>
-        <div style="font-size: 14px;">進度 <span id="c">0</span>/150</div>
+        <div class="lvl-badge">關卡 <span id="lvl">1</span></div>
+        <div style="font-size: 16px;">⭐⭐ <span id="c">0</span>/150</div>
     </div>
     
-    <div class="pic-frame" onclick="spkCurrent()"><img id="q-img" src=""></div>
-    <div style="color:#6c5ce7; font-weight:bold; margin-bottom:10px;" id="st">按下 🎤 說說看</div>
+    <div class="pic-frame" onclick="spkCurrent()">
+        <img id="q-img" src="" class="">
+    </div>
+    <div style="color:#6c5ce7; font-weight:bold; margin-bottom:10px; font-size: 20px;" id="st">按 🎤 跟我說</div>
     <button id="mic-btn" onclick="startListen()">🎤</button>
     <div id="msg"></div>
 </div>
@@ -51,18 +71,39 @@
 
     const allWords = ["Apple", "Ant", "Alligator", "Arrow", "Anchor", "Ambulance", "Bed", "Book", "Banana", "Bear", "Bicycle", "Boat", "Butterfly", "Cake", "Camel", "Can", "Car", "Carrot", "Cat", "Coat", "Cup", "Deer", "Dice", "Dog", "Doll", "Dolphin", "Doughnut", "Drum", "Egg", "Eggplant", "Elbow", "Elephant", "Envelope", "Fan", "Feather", "Fish", "Flower", "Fork", "Frog", "Ghost", "Glass", "Glue", "Goat", "Gorilla", "Grapes", "Harp", "Hat", "Heart", "Hippo", "Holly", "Horse", "Igloo", "Iguana", "In", "Ink", "Insects", "Jacket", "Jacks", "Jellyfish", "Jigsaw puzzle", "Juggle", "Jump rope", "Kangaroo", "Keys", "King", "Kite", "Kitten", "Ladder", "Lollipop", "Leaf", "Light", "Lightning", "Lion", "Match", "Monkey", "Moon", "Mop", "Moose", "Mouse", "Nails", "Needle", "Nest", "Net", "Nine", "Notebook", "Oar", "Octopus", "Orange", "Ornament", "Ostrich", "Ox", "Paintbrush", "Peas", "Pencil", "Piano", "Pig", "Pizza", "Pumpkin", "Quail", "Queen", "Question", "Quilt", "Quiver", "Rabbit", "Rake", "Rhino", "Ring", "Rooster", "Rope", "Rose", "Scooter", "Sloth", "Snake", "Snail", "Snowman", "Spade", "Table", "Tiger", "Tree", "Truck", "Turtle", "Two", "Umbrella", "Umpire", "Under", "Underwear", "Vacuum", "Vase", "Vest", "Vine", "Violin", "Volcano", "Wagon", "Warm", "Watch", "Watermelon", "Whistle", "Window", "Wolf", "X-ray", "Yak", "Yam", "Yarn", "Yoga", "Yo-yo", "Zebra", "Zeppelin", "Zipper", "Zither", "Zucchini"];
     
-    // 隨機洗牌函式
     let masterList = [...allWords].sort(() => Math.random() - 0.5);
     let currentWord = "";
-    let score = 0, totalSolved = 0, isRec = false;
+    let totalSolved = 0, isRec = false;
     let levelSize = 10;
 
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = Recognition ? new Recognition() : null;
-    if (rec) { rec.lang = 'en-US'; rec.maxAlternatives = 5; }
+    if (rec) { rec.lang = 'en-US'; rec.maxAlternatives = 10; }
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     
+    // 【卡通音效函式】
+    function playCartoonSfx(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        
+        if (type === 'correct') { // 叮叮~ (高音)
+            o.type = 'sine';
+            o.frequency.setValueAtTime(880, audioCtx.currentTime); 
+            o.frequency.setValueAtTime(1760, audioCtx.currentTime + 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+            o.start(); o.stop(audioCtx.currentTime + 0.4);
+        } else { // 咚~ (低音)
+            o.type = 'triangle';
+            o.frequency.setValueAtTime(220, audioCtx.currentTime);
+            o.frequency.setValueAtTime(110, audioCtx.currentTime + 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            o.start(); o.stop(audioCtx.currentTime + 0.5);
+        }
+    }
+
     function initGame() {
         if(audioCtx.state === 'suspended') audioCtx.resume();
         document.getElementById('start-overlay').style.display = 'none';
@@ -72,7 +113,7 @@
     function spk(t, callback) {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(t);
-        u.lang = 'en-US'; u.rate = 0.7;
+        u.lang = 'en-US'; u.rate = 0.6; // 中班慢速
         if (callback) u.onend = callback;
         window.speechSynthesis.speak(u);
     }
@@ -85,7 +126,7 @@
         if(isRec) return;
         rec.start(); isRec = true;
         document.getElementById('mic-btn').classList.add('active');
-        document.getElementById('msg').innerHTML = "👂 I'm listening...";
+        document.getElementById('msg').innerHTML = "👂 聽聽看...";
     }
 
     if (rec) {
@@ -93,20 +134,31 @@
             const hears = Array.from(e.results[0]).map(r => r.transcript.toLowerCase());
             const target = currentWord.toLowerCase();
             const body = document.getElementById('bg');
+            const img = document.getElementById('q-img');
             const word = currentWord;
             
-            // 幼兒寬鬆判定
-            const ok = hears.some(h => h.includes(target) || target.includes(h) || (target.length > 3 && h.substring(0,3) === target.substring(0,3)));
+            // 【極寬鬆判定 - 捕捉核心音節】
+            const ok = hears.some(h => {
+                if (h.includes(target) || target.includes(h)) return true; // 包含
+                if (target.length >= 4 && h.startsWith(target.substring(0, 3))) return true; // 字頭
+                if (target.length >= 5 && h.includes(target.substring(2, 5))) return true; // 關鍵音
+                return false;
+            });
+            
+            // 清除之前的動畫類別
+            img.classList.remove('pop-in', 'wiggle', 'shake');
             
             if (ok) {
-                body.style.background = "#abf1da"; createStars();
-                score += 10; totalSolved++;
-                document.getElementById('s').textContent = score;
+                playCartoonSfx('correct'); // 卡通叮叮聲
+                body.style.background = "#abf1da"; 
+                createStars();
+                img.classList.add('wiggle'); // 圖片搖擺動畫
+                
+                totalSolved++;
                 document.getElementById('msg').innerHTML = `<span style="color:#20bf6b">Correct! ✨</span><br>${word}`;
                 
-                // 語音回饋：先說 Correct，再唸單字
                 spk("Correct", () => {
-                    setTimeout(() => spk(word), 200);
+                    setTimeout(() => spk(word), 300);
                 });
                 
                 if (totalSolved % levelSize === 0 && totalSolved > 0) {
@@ -115,19 +167,23 @@
                     setTimeout(nextQuestion, 2800);
                 }
             } else {
+                playCartoonSfx('wrong'); // 卡通咚咚聲
                 body.style.background = "#ffcfcf";
-                document.getElementById('msg').innerHTML = `<span style="color:#d63031">Try again later!</span>`;
+                img.classList.add('shake'); // 圖片震動動畫
                 
-                // 語音回饋：先說 Try again later，再唸正確音引導
+                document.getElementById('msg').innerHTML = `<span style="color:#d63031">Try again!</span>`;
+                
                 spk("Try again later", () => {
-                    setTimeout(() => spk(word), 200);
+                    setTimeout(() => spk(word), 400);
                 });
                 
-                // 錯誤邏輯：將目前的單字插入到清單後面的隨機位置（約 5-8 題後）
+                // 答錯邏輯：插回到 5-8 題之後
                 const failWord = word;
                 const insertPos = Math.min(Math.floor(Math.random() * 4) + 5, masterList.length);
                 masterList.splice(insertPos, 0, failWord);
                 
+                // 3.5 秒後淡出圖片並換題
+                setTimeout(() => { img.style.opacity = 0; img.style.transform = 'scale(0)'; }, 3200);
                 setTimeout(nextQuestion, 3500);
             }
         };
@@ -137,16 +193,25 @@
     function nextQuestion() {
         document.getElementById('bg').style.background = "#f1f2f6";
         document.getElementById('msg').textContent = "";
+        const img = document.getElementById('q-img');
         
         if (masterList.length === 0) {
-            document.getElementById('box').innerHTML = "<h1>🏆 大滿貫破關！</h1><p>Miro 把 150 題都學會了！</p>";
+            document.getElementById('box').innerHTML = "<h1 style='animation: wiggle 1s infinite;'>🏆 SUPERSTAR!</h1><p style='font-size:22px;'>Miro 是最棒的！</p>";
             return;
         }
 
         currentWord = masterList.shift();
-
+        
+        // 換圖前先確保圖片是隱藏的，準備重新觸發動畫
+        img.classList.remove('pop-in', 'wiggle', 'shake');
+        img.style.opacity = 0; img.style.transform = 'scale(0)';
+        
         const fix = { "Lollipop":"lallipop.jpg", "Moose":"mosse.jpg", "Snail":"snall.jpg", "Violin":"vlolin.jpg" };
-        document.getElementById('q-img').src = fix[currentWord] || (currentWord.toLowerCase() + ".jpg");
+        img.src = fix[currentWord] || (currentWord.toLowerCase() + ".jpg");
+        
+        // 圖片載入後觸發「彈出」動畫
+        img.onload = () => { img.classList.add('pop-in'); };
+        
         document.getElementById('c').textContent = totalSolved;
         document.getElementById('lvl').textContent = Math.floor(totalSolved / levelSize) + 1;
     }
@@ -154,16 +219,18 @@
     function showLevelUp() {
         const overlay = document.getElementById('start-overlay');
         const nextLvl = Math.floor(totalSolved / levelSize) + 1;
-        document.getElementById('overlay-title').innerText = `🎉 第 ${nextLvl-1} 關完成！`;
-        document.getElementById('overlay-desc').innerText = `點擊開始挑戰第 ${nextLvl} 關`;
+        document.getElementById('overlay-title').innerText = `🎉 關卡 ${nextLvl-1} 完成！`;
+        document.getElementById('overlay-desc').innerText = `Miro 好棒喔！點一下進入第 ${nextLvl} 關`;
         overlay.style.display = 'flex';
+        // 在過關畫面播放 Correct 音效
+        playCartoonSfx('correct');
     }
 
     function createStars() {
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 20; i++) {
             const s = document.createElement('div'); s.className = 'star'; s.innerHTML = '⭐';
             s.style.left = '50%'; s.style.top = '50%';
-            s.style.setProperty('--x', (Math.random()*600-300)+'px'); s.style.setProperty('--y', (Math.random()*600-300)+'px');
+            s.style.setProperty('--x', (Math.random()*700-350)+'px'); s.style.setProperty('--y', (Math.random()*700-350)+'px');
             document.body.appendChild(s); setTimeout(() => s.remove(), 1000);
         }
     }
